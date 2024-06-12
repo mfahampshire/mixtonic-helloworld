@@ -14,6 +14,7 @@ cargo run --bin helloworld-client
 ## todo
 - [ ] sort out non-utf8 noise on return 
 - [ ] readme arch diagram
+- [ ] take destination client as cli arg
 - [ ] non-naive awaiting init for gRPC server 
 - [ ] replace fixed buffers with streaming
 - [ ] `tokio::io::copy()`
