@@ -95,7 +95,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 // this is where it is hanging 
                 let mut guard = rx_surbs.lock().await;
-                println!("if you see this: not hanging");
                 if guard.is_none() {
                     *guard = Some(message.sender_tag.unwrap());
                     println!("<< parsed and set a sender tag from incoming");
