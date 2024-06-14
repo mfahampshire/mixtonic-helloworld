@@ -18,7 +18,8 @@ pub mod hello_world {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let (tx, mut rx) = mpsc::channel(100);
+    // old code: left here to remind what was here
+    // let (tx, mut rx) = mpsc::channel(100);
 
     let server_addr: Recipient = Recipient::from_str("751RdLgqHu7oGnKQtTneW4Zk3bM1uVtq6PmFj5xmmCcM.2Xt31mPndcdjL78sz4nUt5VwrXy1LLUzzpQKPVFWssHT@BWAjmWipJTSi55yPqvq588wi8kk2xrPTq47XHmYEaTD7").unwrap(); 
 
@@ -35,9 +36,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let codec = BytesCodec::new();
         let mut decoder = FramedRead::new(&mut socket, codec);
         while let Some(bytes) = decoder.next().await {
-            tx.send(bytes.unwrap()).await.unwrap();
+            // tx.send(bytes.unwrap()).await.unwrap();
+            println!("sending {:?} to {server_addr}", bytes.as_ref().unwrap());
+            sender.send_plain_message(server_addr, bytes.unwrap()).await.unwrap();
         };
-        
+        // old code: left here to remind what was here
         // let mut buf = vec![0; 1024];
         // loop {
         //     let n = socket.read(&mut buf).await.unwrap();
@@ -49,6 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         
     });
 
+    // old code: took out a step and just send message in task above now we have codec
     // task::spawn(async move {
     //     if rx.is_empty() {
     //         println!("nothing in rx");
@@ -57,25 +61,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //     }
     //     while let Some(buf) = rx.recv().await {
     //         println!(">> received: {:?} on socket, sending to mixnet", buf);
-    //         sender
-    //             .send_plain_message(Recipient::from_str("").unwrap(), buf)
-    //             .await
-    //             .unwrap();
+    //         sender.send_plain_message(server_addr, buf).await.unwrap();
     //     }
     // });
-
-    // TODO get rid of this & just send message in task above 
-    task::spawn(async move {
-        if rx.is_empty() {
-            println!("nothing in rx");
-        } else {
-            println!("something in rx chann");
-        }
-        while let Some(buf) = rx.recv().await {
-            println!(">> received: {:?} on socket, sending to mixnet", buf);
-            sender.send_plain_message(server_addr, buf).await.unwrap();
-        }
-    });
 
     task::spawn(async move {
         while let Some(new_message) = listen_client.wait_for_messages().await {
