@@ -41,7 +41,7 @@ impl Greeter for MyGreeter {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let (tx, mut rx) = mpsc::channel(100);
+    // let (tx, mut rx) = mpsc::channel(100);
 
     task::spawn(async move {
         let addr = "127.0.0.1:50051".parse().unwrap();
@@ -69,26 +69,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sender = client.split_sender();
     println!("client created: {}", &client_addr);
 
-    task::spawn(async move {
-        loop {
-            let mut message: Vec<ReconstructedMessage> = Vec::new();
-            while let Some(new_message) = client.wait_for_messages().await {
-                if new_message.is_empty() {
-                    println!("<< got empty message: most likely SURB request");
-                    continue;
-                }
-                message = new_message;
-                break;
-            }
-
-            println!("<< received {:?} from mixnet", message);
-            tx.send(message).await.unwrap();
-        }
-    });
-
-    tokio::time::sleep(tokio::time::Duration::from_secs(4)).await; // TODO wait until grpc server is listening (see first bytes in console) instead of just sleeping
-    println!("gRPC up: start sending");
-
     let stream = TcpStream::connect("127.0.0.1:50051").await.unwrap();
     let (read, mut write) = stream.into_split();
 
@@ -97,23 +77,64 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let tx_surbs = surbs.clone();
 
     task::spawn(async move {
-        while let Some(messages) = rx.recv().await {
+        loop {
+            let mut messages: Vec<ReconstructedMessage> = Vec::new();
+            while let Some(new_messages) = client.wait_for_messages().await {
+                if new_messages.is_empty() {
+                    println!("<< got empty message: most likely SURB request");
+                    continue;
+                }
+                messages = new_messages;
+                break;
+            }
+
+            println!("<< received {:?} from mixnet", messages);
+            // tx.send(message).await.unwrap();
             for message in messages {
-                println!("DEBUG start of rx.recv(ReconstructedMessages) loop");
+                println!("<< incoming sender_tag: {:?}", message.sender_tag);
+
+                // this is where it is hanging 
                 let mut guard = rx_surbs.lock().await;
+                println!("if you see this: not hanging");
                 if guard.is_none() {
                     *guard = Some(message.sender_tag.unwrap());
-                    println!("<< parsed a sender tag from incoming");
+                    println!("<< parsed and set a sender tag from incoming");
                 } else {
-                    println!("DEBUG could not find sender tag in incoming")
+                    println!("could not find sender tag in incoming")
                 }
-
-                println!("<< mixnet message: {message:?}");
- 
                 write.write_all(&message.message).await.unwrap();
             }
         }
     });
+
+    tokio::time::sleep(tokio::time::Duration::from_secs(4)).await; // TODO wait until grpc server is listening (see first bytes in console) instead of just sleeping
+    println!("gRPC up: start sending");
+
+    // let stream = TcpStream::connect("127.0.0.1:50051").await.unwrap();
+    // let (read, mut write) = stream.into_split();
+
+    // let surbs: Arc<Mutex<Option<AnonymousSenderTag>>> = Arc::new(Mutex::new(None));
+    // let rx_surbs = surbs.clone();
+    // let tx_surbs = surbs.clone();
+
+    // task::spawn(async move {
+    //     while let Some(messages) = rx.recv().await {
+    //         for message in messages {
+    //             println!("DEBUG start of rx.recv(ReconstructedMessages) loop");
+    //             let mut guard = rx_surbs.lock().await;
+    //             if guard.is_none() {
+    //                 *guard = Some(message.sender_tag.unwrap());
+    //                 println!("<< parsed a sender tag from incoming");
+    //             } else {
+    //                 println!("DEBUG could not find sender tag in incoming")
+    //             }
+
+    //             println!("<< mixnet message: {message:?}");
+ 
+    //             write.write_all(&message.message).await.unwrap();
+    //         }
+    //     }
+    // });
 
     task::spawn(async move {
         let encoder: BytesCodec = BytesCodec::new();
@@ -123,7 +144,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("surbs parsed: {guard:#?}");
 
         while let Some(bytes) = reader.next().await {
-            println!(">> bytes from reader.next(): {bytes:?}");
+            println!(">> bytes from reader.next(): {:?}", bytes.as_ref().unwrap());
             if let Some(address) = guard.clone() {
                 println!(">> sending {:?} as reply to {}", bytes.as_ref().unwrap(), address.clone());
                 sender.send_reply(address.clone(), bytes.unwrap()).await.unwrap();
