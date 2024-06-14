@@ -5,6 +5,7 @@ use nym_sdk::mixnet::{
     ReconstructedMessage, StoragePaths,
 };
 use nym_sphinx_anonymous_replies::requests::AnonymousSenderTag;
+use prost::bytes::Bytes;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader};
@@ -12,6 +13,8 @@ use tokio::net::TcpStream;
 use tokio::sync::{mpsc, Mutex};
 use tokio::task;
 use tonic::{transport::Server, Request, Response, Status};
+use tokio_util::codec::{BytesCodec, FramedRead, FramedWrite};
+use tokio_stream::StreamExt;
 
 pub mod hello_world {
     tonic::include_proto!("helloworld");
@@ -86,7 +89,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await; // TODO wait until grpc server is listening (see first bytes in console) instead of just sleeping
+    tokio::time::sleep(tokio::time::Duration::from_secs(4)).await; // TODO wait until grpc server is listening (see first bytes in console) instead of just sleeping
+    println!("gRPC up: start sending");
 
     let mut stream = TcpStream::connect("127.0.0.1:50051").await.unwrap();
     let (mut read, mut write) = stream.into_split();
@@ -97,34 +101,45 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     task::spawn(async move {
         while let Some(messages) = rx.recv().await {
-            println!("in the message thread");
             for message in messages {
                 let mut guard = rx_surbs.lock().await;
                 if guard.is_none() {
                     *guard = Some(message.sender_tag.unwrap());
                 }
 
-                println!("{message:?}");
+                println!("<< mixnet message: {message:?}");
+ 
                 write.write_all(&message.message).await.unwrap();
             }
         }
     });
 
     task::spawn(async move {
-        let mut buf = vec![0; 1024];
-        loop {
-            let n = read.read(&mut buf).await.unwrap();
-            if n < 1 {
-                continue;
-            }
-            let mut dst = vec![0u8; n];
-            dst.clone_from_slice(&buf[0..n]);
-            println!(">> {} {:?}", n, dst);
-            let guard = tx_surbs.lock().await;
+
+        let encoder = BytesCodec::new();
+        let mut writer = FramedWrite::new(read.into(), encoder);
+
+        let guard = tx_surbs.lock().await;
+
+        while let Some(Bytes) = writer.next().await {
             if let Some(address) = guard.clone() {
-                sender.send_reply(address.clone(), dst).await.unwrap();
+                sender.send_reply(address.clone(), bytes.unwrap()).await.unwrap();
             }
         }
+        // let mut buf = vec![0; 1024];
+        // loop {
+        //     let n = read.read(&mut buf).await.unwrap();
+        //     if n < 1 {
+        //         continue;
+        //     }
+        //     let mut dst = vec![0u8; n];
+        //     dst.clone_from_slice(&buf[0..n]);
+        //     println!(">> {} {:?}", n, dst);
+        //     let guard = tx_surbs.lock().await;
+        //     if let Some(address) = guard.clone() {
+        //         sender.send_reply(address.clone(), dst).await.unwrap();
+        //     }
+        // }
     });
 
     tokio::signal::ctrl_c().await.unwrap();

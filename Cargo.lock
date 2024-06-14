@@ -1722,6 +1722,8 @@ dependencies = [
  "protobuf 3.4.0",
  "protoc-rust-grpc",
  "tokio",
+ "tokio-stream",
+ "tokio-util",
  "tonic",
  "tonic-build",
 ]
