@@ -1,7 +1,7 @@
 use hello_world::greeter_client::GreeterClient;
 use hello_world::HelloRequest;
-
 use nym_sdk::mixnet::{MixnetClient, MixnetMessageSender, Recipient};
+use std::env;
 use std::str::FromStr;
 use tokio::net::TcpListener;
 use tokio::task;
@@ -14,7 +14,9 @@ pub mod hello_world {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let server_addr: Recipient = Recipient::from_str("Hb7bWBHUpyiqus4mWsHooBVD545u4u27VsiVcR645GC5.82JfXAEWKbujJv5KXT9HUc9eCHvDp9envWXhx46b9sBT@3RGUju1J3HB6qV4zwPdXTUxZTdFd6RPkpzwkrteici9b").unwrap();
+    let args: Vec<String> = env::args().collect();
+    let server_addr =
+        Recipient::from_str(&args.get(1).expect("missing server nym address")).unwrap();
 
     //    nym_bin_common::logging::setup_logging();
     println!("creating client...");
@@ -46,7 +48,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 continue;
             } else {
                 println!("<< mixnet listener got message from mixnet: {new_message:?}");
-                println!("{}", String::from_utf8_lossy(&new_message[0].message))
+                println!("{}", String::from_utf8_lossy(&new_message[0].message));
             }
         }
     });
