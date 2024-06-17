@@ -39,8 +39,6 @@ impl Greeter for MyGreeter {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // let (tx, mut rx) = mpsc::channel(100);
-
     task::spawn(async move {
         let addr = "127.0.0.1:50051".parse().unwrap();
         let greeter = MyGreeter::default();
@@ -94,7 +92,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             for message in messages {
                 println!("<< incoming sender_tag: {:?}", message.sender_tag);
                 {
-                    // this panics when task below aquires the tx_surbs_guard - why?
                     let mut rx_surbs_guard = rx_surbs.try_lock().unwrap();
                     if rx_surbs_guard.is_none() {
                         *rx_surbs_guard = Some(message.sender_tag.unwrap());

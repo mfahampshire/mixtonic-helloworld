@@ -29,7 +29,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let codec = BytesCodec::new();
         let mut decoder = FramedRead::new(&mut socket, codec);
         while let Some(bytes) = decoder.next().await {
-            // tx.send(bytes.unwrap()).await.unwrap();
             println!(">> sending {:?} to {server_addr}", bytes.as_ref().unwrap());
             sender
                 .send_plain_message(server_addr, bytes.unwrap())
