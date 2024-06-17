@@ -8,7 +8,7 @@ Running the [`tonic` crate HelloWorld example](https://github.com/hyperium/tonic
 cargo run --bin helloworld-server
 
 # terminal window 2: 
-cargo run --bin helloworld-client
+cargo run --bin helloworld-client -- <SERVER_ADDR>
 ```
 
 ## todo
