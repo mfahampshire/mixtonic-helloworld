@@ -48,7 +48,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 continue;
             } else {
                 println!("<< mixnet listener got message from mixnet: {new_message:?}");
-                println!("{}", String::from_utf8_lossy(&new_message[0].message));
+                println!(
+                    "<< parsed response: {}",
+                    String::from_utf8_lossy(&new_message[0].message)
+                );
             }
         }
     });
@@ -66,8 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     println!(">> request: {request:#?}");
 
-    let response = client.say_hello(request).await.unwrap();
-    println!("<< response: {response:#?}");
+    client.say_hello(request).await.unwrap();
 
     // keep looping so it doesnt die
     loop {

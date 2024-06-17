@@ -111,9 +111,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         {
             while let Some(bytes) = reader.next().await {
                 println!(
-                    ">> read {:?} bytes from reader.next(): {:?}",
+                    ">> read {:?} bytes from reader.next()",
                     bytes.as_ref().unwrap().len(),
-                    bytes.as_ref().unwrap()
                 );
                 if let Some(address) = tx_surbs.lock().await.clone() {
                     println!(
