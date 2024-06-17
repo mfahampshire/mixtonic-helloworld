@@ -16,5 +16,5 @@ cargo run --bin helloworld-client
 - [ ] readme arch diagram
 - [ ] take destination client as cli arg
 - [ ] non-naive awaiting init for gRPC server 
-- [ ] replace fixed buffers with streaming
+- [x] replace fixed buffers with streaming
 - [ ] `tokio::io::copy()`
