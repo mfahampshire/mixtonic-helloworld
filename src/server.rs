@@ -114,12 +114,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut reader = FramedRead::new(read, encoder);
 
         {
-            let tx_surbs_guard = tx_surbs.lock().await;
-            println!("aquired tx_surbs_guard");
+            //let tx_surbs_guard = tx_surbs.lock().await;
+            //println!("aquired tx_surbs_guard");
 
             while let Some(bytes) = reader.next().await {
-                println!(">> bytes from reader.next(): {:?}", bytes.as_ref().unwrap());
-                if let Some(address) = tx_surbs_guard.clone() {
+                println!(
+                    ">> read {:?} bytes from reader.next(): {:?}",
+                    bytes.as_ref().unwrap().len(),
+                    bytes.as_ref().unwrap()
+                );
+                if let Some(address) = tx_surbs.lock().await.clone() {
                     println!(
                         ">> sending {:?} as reply to {}",
                         bytes.as_ref().unwrap(),
