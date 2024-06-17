@@ -4,7 +4,7 @@ Running the [`tonic` crate HelloWorld example](https://github.com/hyperium/tonic
 
 ## run
 ```
-# terminal window 1: run this and wait for `>> 27 [0, 0, 18, 4, 0, 0, 0, 0, 0, 0, 4, 0, 16, 0, 0, 0, 5, 0, 0, 64, 0, 0, 6, 1, 0, 0, 0]` to appear in console 
+# terminal window 1: run this and wait for 27 bytes to be read initially: this is the grpc server 
 cargo run --bin helloworld-server
 
 # terminal window 2: 
@@ -17,4 +17,4 @@ cargo run --bin helloworld-client
 - [ ] take destination client as cli arg
 - [ ] non-naive awaiting init for gRPC server 
 - [x] replace fixed buffers with streaming
-- [ ] `tokio::io::copy()`
+- [ ] `tokio::io::copy()` / proper stream r/w split in `client.rs`
