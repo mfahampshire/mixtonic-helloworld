@@ -1,9 +1,7 @@
 use hello_world::greeter_client::GreeterClient;
 use hello_world::HelloRequest;
 
-use nym_sdk::mixnet::{
-    MixnetClient, MixnetMessageSender, Recipient,
-};
+use nym_sdk::mixnet::{MixnetClient, MixnetMessageSender, Recipient};
 use std::str::FromStr;
 use tokio::net::TcpListener;
 use tokio::task;
@@ -16,9 +14,6 @@ pub mod hello_world {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // old code: left here to remind what was here
-    // let (tx, mut rx) = mpsc::channel(100);
-
     let server_addr: Recipient = Recipient::from_str("Hb7bWBHUpyiqus4mWsHooBVD545u4u27VsiVcR645GC5.82JfXAEWKbujJv5KXT9HUc9eCHvDp9envWXhx46b9sBT@3RGUju1J3HB6qV4zwPdXTUxZTdFd6RPkpzwkrteici9b").unwrap();
 
     //    nym_bin_common::logging::setup_logging();
@@ -41,29 +36,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .await
                 .unwrap();
         }
-        // old code: left here to remind what was here
-        // let mut buf = vec![0; 1024];
-        // loop {
-        //     let n = socket.read(&mut buf).await.unwrap();
-        //     println!(">> socket read {} bytes", n);
-        //     let mut dst = vec![0u8; n];
-        //     dst.clone_from_slice(&buf[0..n]);
-        //     tx.send(dst).await.unwrap();
-        // }
     });
-
-    // old code: took out a step and just send message in task above now we have codec
-    // task::spawn(async move {
-    //     if rx.is_empty() {
-    //         println!("nothing in rx");
-    //     } else {
-    //         println!("something in rx chann");
-    //     }
-    //     while let Some(buf) = rx.recv().await {
-    //         println!(">> received: {:?} on socket, sending to mixnet", buf);
-    //         sender.send_plain_message(server_addr, buf).await.unwrap();
-    //     }
-    // });
 
     task::spawn(async move {
         while let Some(new_message) = listen_client.wait_for_messages().await {

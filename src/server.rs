@@ -1,15 +1,14 @@
 use hello_world::greeter_server::{Greeter, GreeterServer};
 use hello_world::{HelloReply, HelloRequest};
 use nym_sdk::mixnet::{
-    MixnetClientBuilder, MixnetMessageSender,
-    ReconstructedMessage, StoragePaths,
+    MixnetClientBuilder, MixnetMessageSender, ReconstructedMessage, StoragePaths,
 };
 use nym_sphinx_anonymous_replies::requests::AnonymousSenderTag;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tokio::io::{AsyncWriteExt};
+use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
-use tokio::sync::{Mutex};
+use tokio::sync::Mutex;
 use tokio::task;
 use tokio_stream::StreamExt;
 use tokio_util::codec::{BytesCodec, FramedRead};
@@ -113,9 +112,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut reader = FramedRead::new(read, encoder);
 
         {
-            //let tx_surbs_guard = tx_surbs.lock().await;
-            //println!("aquired tx_surbs_guard");
-
             while let Some(bytes) = reader.next().await {
                 println!(
                     ">> read {:?} bytes from reader.next(): {:?}",
