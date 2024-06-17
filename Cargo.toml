@@ -22,6 +22,8 @@ nym-bin-common = { git = "https://github.com/nymtech/nym", rev = "c6103891989855
 nym-sphinx-anonymous-replies = { git = "https://github.com/nymtech/nym", rev = "c6103891989855eea6471ef4f5f836dc5fbcbd19" }
 protoc-rust-grpc = "0.8.3"
 protobuf = "3.4.0"
+tokio-util = "0.7.11"
+tokio-stream = "0.1.15"
 
 [build-dependencies]
 tonic-build = "0.11"
