@@ -1,19 +1,18 @@
 use hello_world::greeter_server::{Greeter, GreeterServer};
 use hello_world::{HelloReply, HelloRequest};
 use nym_sdk::mixnet::{
-    MixnetClient, MixnetClientBuilder, MixnetClientSender, MixnetMessageSender, Recipient,
+    MixnetClientBuilder, MixnetMessageSender,
     ReconstructedMessage, StoragePaths,
 };
 use nym_sphinx_anonymous_replies::requests::AnonymousSenderTag;
-use prost::bytes::Bytes;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader};
+use tokio::io::{AsyncWriteExt};
 use tokio::net::TcpStream;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::{Mutex};
 use tokio::task;
 use tokio_stream::StreamExt;
-use tokio_util::codec::{BytesCodec, FramedRead, FramedWrite};
+use tokio_util::codec::{BytesCodec, FramedRead};
 use tonic::{transport::Server, Request, Response, Status};
 
 pub mod hello_world {
