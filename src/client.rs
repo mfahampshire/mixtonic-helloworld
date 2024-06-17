@@ -1,27 +1,28 @@
 use hello_world::greeter_client::GreeterClient;
 use hello_world::HelloRequest;
 
-use nym_sdk::mixnet::{MixnetClient, MixnetMessageSender, Recipient, ReconstructedMessage, InputMessage};
+use nym_sdk::mixnet::{
+    InputMessage, MixnetClient, MixnetMessageSender, Recipient, ReconstructedMessage,
+};
 use nym_sphinx_anonymous_replies::requests::AnonymousSenderTag;
 use std::str::FromStr;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 use tokio::sync::mpsc;
 use tokio::task;
-use tokio_util::codec::{FramedRead, BytesCodec};
 use tokio_stream::StreamExt;
+use tokio_util::codec::{BytesCodec, FramedRead};
 
 pub mod hello_world {
     tonic::include_proto!("helloworld");
 }
-
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // old code: left here to remind what was here
     // let (tx, mut rx) = mpsc::channel(100);
 
-    let server_addr: Recipient = Recipient::from_str("751RdLgqHu7oGnKQtTneW4Zk3bM1uVtq6PmFj5xmmCcM.2Xt31mPndcdjL78sz4nUt5VwrXy1LLUzzpQKPVFWssHT@BWAjmWipJTSi55yPqvq588wi8kk2xrPTq47XHmYEaTD7").unwrap(); 
+    let server_addr: Recipient = Recipient::from_str("Hb7bWBHUpyiqus4mWsHooBVD545u4u27VsiVcR645GC5.82JfXAEWKbujJv5KXT9HUc9eCHvDp9envWXhx46b9sBT@3RGUju1J3HB6qV4zwPdXTUxZTdFd6RPkpzwkrteici9b").unwrap();
 
     //    nym_bin_common::logging::setup_logging();
     println!("creating client...");
@@ -38,8 +39,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         while let Some(bytes) = decoder.next().await {
             // tx.send(bytes.unwrap()).await.unwrap();
             println!(">> sending {:?} to {server_addr}", bytes.as_ref().unwrap());
-            sender.send_plain_message(server_addr, bytes.unwrap()).await.unwrap();
-        };
+            sender
+                .send_plain_message(server_addr, bytes.unwrap())
+                .await
+                .unwrap();
+        }
         // old code: left here to remind what was here
         // let mut buf = vec![0; 1024];
         // loop {
@@ -49,7 +53,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         //     dst.clone_from_slice(&buf[0..n]);
         //     tx.send(dst).await.unwrap();
         // }
-        
     });
 
     // old code: took out a step and just send message in task above now we have codec
@@ -81,14 +84,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // start gRPC and start listening on local 8080
     // TODO work out a way of sending this to split rd,wr - doesn't like the rd on its own, need to implement some sort of addr trait
-    // maybe I can just to do the same stream split as in the server? 
+    // maybe I can just to do the same stream split as in the server?
     let mut client = GreeterClient::connect("http://127.0.0.1:8080")
         .await
         .unwrap();
     println!("{client:#?}");
 
     let request = tonic::Request::new(HelloRequest {
-        name: "Tonic".into(),
+        name: "NymTonic".into(),
     });
     println!(">> request: {request:#?}");
 

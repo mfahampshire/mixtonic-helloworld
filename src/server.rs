@@ -12,9 +12,9 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::net::TcpStream;
 use tokio::sync::{mpsc, Mutex};
 use tokio::task;
-use tonic::{transport::Server, Request, Response, Status};
-use tokio_util::codec::{BytesCodec, FramedRead, FramedWrite};
 use tokio_stream::StreamExt;
+use tokio_util::codec::{BytesCodec, FramedRead, FramedWrite};
+use tonic::{transport::Server, Request, Response, Status};
 
 pub mod hello_world {
     tonic::include_proto!("helloworld");
@@ -76,6 +76,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rx_surbs = surbs.clone();
     let tx_surbs = surbs.clone();
 
+    tokio::time::sleep(tokio::time::Duration::from_secs(4)).await; // TODO wait until grpc server is listening (see first bytes in console) instead of just sleeping
+    println!("gRPC up: start sending");
+
     task::spawn(async move {
         loop {
             let mut messages: Vec<ReconstructedMessage> = Vec::new();
@@ -92,91 +95,45 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // tx.send(message).await.unwrap();
             for message in messages {
                 println!("<< incoming sender_tag: {:?}", message.sender_tag);
-
-                // this is where it is hanging 
-                let mut guard = rx_surbs.lock().await;
-                if guard.is_none() {
-                    *guard = Some(message.sender_tag.unwrap());
-                    println!("<< parsed and set a sender tag from incoming");
-                } else {
-                    println!("could not find sender tag in incoming")
+                {
+                    // this panics when task below aquires the tx_surbs_guard - why?
+                    let mut rx_surbs_guard = rx_surbs.try_lock().unwrap();
+                    if rx_surbs_guard.is_none() {
+                        *rx_surbs_guard = Some(message.sender_tag.unwrap());
+                        println!("<< parsed and set a sender tag from incoming");
+                    }
                 }
+                println!("after rx_surbs_guard lock and set scope");
                 write.write_all(&message.message).await.unwrap();
             }
         }
     });
 
-    tokio::time::sleep(tokio::time::Duration::from_secs(4)).await; // TODO wait until grpc server is listening (see first bytes in console) instead of just sleeping
-    println!("gRPC up: start sending");
-
-    // let stream = TcpStream::connect("127.0.0.1:50051").await.unwrap();
-    // let (read, mut write) = stream.into_split();
-
-    // let surbs: Arc<Mutex<Option<AnonymousSenderTag>>> = Arc::new(Mutex::new(None));
-    // let rx_surbs = surbs.clone();
-    // let tx_surbs = surbs.clone();
-
-    // task::spawn(async move {
-    //     while let Some(messages) = rx.recv().await {
-    //         for message in messages {
-    //             println!("DEBUG start of rx.recv(ReconstructedMessages) loop");
-    //             let mut guard = rx_surbs.lock().await;
-    //             if guard.is_none() {
-    //                 *guard = Some(message.sender_tag.unwrap());
-    //                 println!("<< parsed a sender tag from incoming");
-    //             } else {
-    //                 println!("DEBUG could not find sender tag in incoming")
-    //             }
-
-    //             println!("<< mixnet message: {message:?}");
- 
-    //             write.write_all(&message.message).await.unwrap();
-    //         }
-    //     }
-    // });
-
     task::spawn(async move {
         let encoder: BytesCodec = BytesCodec::new();
         let mut reader = FramedRead::new(read, encoder);
 
-        let guard = tx_surbs.lock().await;
-        println!("surbs parsed: {guard:#?}");
+        {
+            let tx_surbs_guard = tx_surbs.lock().await;
+            println!("aquired tx_surbs_guard");
 
-        while let Some(bytes) = reader.next().await {
-            println!(">> bytes from reader.next(): {:?}", bytes.as_ref().unwrap());
-            if let Some(address) = guard.clone() {
-                println!(">> sending {:?} as reply to {}", bytes.as_ref().unwrap(), address.clone());
-                sender.send_reply(address.clone(), bytes.unwrap()).await.unwrap();
+            while let Some(bytes) = reader.next().await {
+                println!(">> bytes from reader.next(): {:?}", bytes.as_ref().unwrap());
+                if let Some(address) = tx_surbs_guard.clone() {
+                    println!(
+                        ">> sending {:?} as reply to {}",
+                        bytes.as_ref().unwrap(),
+                        address.clone()
+                    );
+                    sender
+                        .send_reply(address.clone(), bytes.unwrap())
+                        .await
+                        .unwrap();
+                }
             }
         }
-
-        // let encoder = BytesCodec::new();
-        // let mut writer = FramedWrite::new(read, encoder);
-
-        // let guard = tx_surbs.lock().await;
-
-        // while let Some(bytes) = writer.next().await {
-        //     if let Some(address) = guard.clone() {
-        //         sender.send_reply(address.clone(), bytes.unwrap()).await.unwrap();
-        //     }
-        // }
-        // let mut buf = vec![0; 1024];
-        // loop {
-        //     let n = read.read(&mut buf).await.unwrap();
-        //     if n < 1 {
-        //         continue;
-        //     }
-        //     let mut dst = vec![0u8; n];
-        //     dst.clone_from_slice(&buf[0..n]);
-        //     println!(">> {} {:?}", n, dst);
-        //     let guard = tx_surbs.lock().await;
-        //     if let Some(address) = guard.clone() {
-        //         sender.send_reply(address.clone(), dst).await.unwrap();
-        //     }
-        // }
     });
 
     tokio::signal::ctrl_c().await.unwrap();
-
     Ok(())
 }
