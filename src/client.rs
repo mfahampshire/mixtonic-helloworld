@@ -2,13 +2,10 @@ use hello_world::greeter_client::GreeterClient;
 use hello_world::HelloRequest;
 
 use nym_sdk::mixnet::{
-    InputMessage, MixnetClient, MixnetMessageSender, Recipient, ReconstructedMessage,
+    MixnetClient, MixnetMessageSender, Recipient,
 };
-use nym_sphinx_anonymous_replies::requests::AnonymousSenderTag;
 use std::str::FromStr;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
-use tokio::sync::mpsc;
 use tokio::task;
 use tokio_stream::StreamExt;
 use tokio_util::codec::{BytesCodec, FramedRead};
